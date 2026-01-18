@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<title>ระบบสั่งอาหาร โรงเรียนตะพานหิน</title>
+<style>
+body{font-family:Arial;background:#eef2f7}
+.container{max-width:500px;margin:40px auto;background:#fff;padding:20px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.15)}
+h1{text-align:center}
+button{width:100%;padding:10px;margin:6px 0;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:15px;cursor:pointer}
+button:disabled{background:#9ca3af}
+input,select{width:100%;padding:8px;margin:6px 0;border-radius:6px;border:1px solid #ccc}
+.hidden{display:none}
+.menu{border:1px solid #ddd;border-radius:10px;padding:8px;text-align:center}
+.menu img{width:100%;height:90px;object-fit:cover;border-radius:8px}
+</style>
+</head>
+<body>
+
+<div class="container" id="home">
+<h1>สั่งอาหารโรงเรียนตะพานหิน</h1>
+<button onclick="show('login')">เข้าสู่ระบบ</button>
+<button onclick="show('register')">สมัครสมาชิก</button>
+</div>
+
+<div class="container hidden" id="login">
+<h1>เข้าสู่ระบบ</h1>
+<select id="loginRole"><option value="student">นักเรียน</option><option value="seller">คนขาย</option></select>
+<input id="loginUser" placeholder="ชื่อผู้ใช้" maxlength="30">
+<input id="loginPass" type="password" placeholder="รหัสผ่าน 6 หลัก" maxlength="6">
+<button onclick="login()">เข้าสู่ระบบ</button>
+<button onclick="show('home')">กลับ</button>
+</div>
+
+<div class="container hidden" id="register">
+<h1>สมัครสมาชิก</h1>
+<select id="regRole"><option value="student">นักเรียน</option><option value="seller">คนขาย</option></select>
+<input id="regUser" placeholder="ชื่อผู้ใช้" maxlength="30">
+<input id="regPass" type="password" placeholder="รหัสผ่าน 6 หลัก" maxlength="6">
+<button onclick="register()">สมัคร</button>
+<button onclick="show('home')">กลับ</button>
+</div>
+
+<div class="container hidden" id="shop">
+<h1 id="shopTitle">ร้านอาหาร</h1>
+<p id="studentMsg" style="text-align:center;color:#666">ยังไม่มีเมนูอาหาร</p>
+<div id="menuList" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px"></div>
+
+<div id="sellerPanel" class="hidden">
+<hr>
+<h3>สำหรับคนขาย</h3>
+<input id="shopName" placeholder="ชื่อร้านอาหาร" maxlength="30">
+<input type="time" id="openTime" value="11:35">
+<input type="time" id="closeTime" value="13:00">
+<button onclick="createShop()">สร้างร้าน</button>
+<hr>
+<input type="file" id="foodImg" accept="image/*">
+<input id="foodName" placeholder="ชื่ออาหาร" maxlength="30">
+<input id="foodPrice" type="number" placeholder="ราคา">
+<button onclick="addMenu()">เพิ่มเมนู</button>
+<button onclick="exportExcel()">ส่งออก Excel</button>
+</div>
+<button onclick="show('home')">ออกจากระบบ</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+let role='';
+let orders=[];
+let orderCount=1;
+function show(id){document.querySelectorAll('.container').forEach(d=>d.classList.add('hidden'));document.getElementById(id).classList.remove('hidden')}
+
+function register(){alert('สมัครสมาชิกสำเร็จ');show('login')}
+
+function login(){role=document.getElementById('loginRole').value;show('shop');if(role==='seller'){sellerPanel.classList.remove('hidden');studentMsg.style.display='none'}}
+
+function createShop(){if(!shopName.value)return alert('กรอกชื่อร้าน');shopTitle.textContent=shopName.value}
+
+function addMenu(){if(!foodImg.files[0]||!foodName.value||!foodPrice.value)return alert('กรอกข้อมูลให้ครบ');
+const reader=new FileReader();
+reader.onload=e=>{
+const d=document.createElement('div');d.className='menu';
+d.innerHTML=`<img src="${e.target.result}"><div>${foodName.value}</div><b>${foodPrice.value} บาท</b>`;
+if(role==='student'){const b=document.createElement('button');b.textContent='สั่งอาหาร';b.onclick=()=>order(foodName.value,foodPrice.value);d.appendChild(b)}
+menuList.appendChild(d);studentMsg.style.display='none'};
+reader.readAsDataURL(foodImg.files[0])}
+
+function order(name,price){
+  const orderData={
+    orderId:'ORD'+String(orderCount).padStart(3,'0'),
+    menu:name,
+    price:price,
+    time:new Date().toLocaleTimeString()
+  };
+  orders.push(orderData);
+  orderCount++;
+  autoExportExcel();
+  alert('สั่งอาหารแล้ว และบันทึกลง Excel ทันที');
+});alert('สั่งอาหารแล้ว')}
+
+function exportExcel(){
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(orders);
+  XLSX.utils.book_append_sheet(wb,ws,'Orders');
+  XLSX.writeFile(wb,'orders.xlsx');
+}
+
+function autoExportExcel(){
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.json_to_sheet(orders);
+  XLSX.utils.book_append_sheet(wb,ws,'Orders');
+  XLSX.writeFile(wb,'orders_auto.xlsx');
+}
+</script>
+</body>
+</html>
